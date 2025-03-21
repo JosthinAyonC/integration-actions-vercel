@@ -30,9 +30,9 @@ jobs:
         shell: bash
         run: |
           if [[ $? -eq 0 ]]; then
-            echo "EXITO || Despliegue exitoso en Vercel" >> $GITHUB_ENV
+            echo "DEPLOY_STATUS=EXITO || Despliegue exitoso en Vercel" >> $GITHUB_ENV
           else
-            echo "ERROR || El despliegue en Vercel falló" >> $GITHUB_ENV
+            echo "DEPLOY_STATUS=ERROR || El despliegue en Vercel falló" >> $GITHUB_ENV
           fi
 
   upload-result-s3:
@@ -56,7 +56,7 @@ jobs:
             Branch: ${{ github.ref }}
             Commit: ${{ github.sha }}
             Mensaje: ${{ github.event.head_commit.message }}
-            Status deployment: ${{ env.EXITO || env.ERROR }}
+            Status deployment: ${{ env.DEPLOY_STATUS }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           bucket-name: ${{ secrets.AWS_BUCKET_NAME }}
