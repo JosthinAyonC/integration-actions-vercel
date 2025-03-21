@@ -6,27 +6,7 @@ on:
       - main
 
 jobs:
-  log-to-s3:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v3
-      - name: Verificar variables de entorno
-        shell: bash
-        run: |
-          echo "AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}"
-          echo "AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          echo "AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}"
-      - name: Usar action personalizada
-        uses: JosthinAyonC/upload-log-s3@v1.0
-        with:
-          log-text: "Nuevo push en main - Commit: ${{ github.sha }} - Mensaje: ${{ github.event.head_commit.message }}"
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          bucket-name: ${{ secrets.AWS_BUCKET_NAME }}
-
   deploy-frontend:
-    needs: log-to-s3
     runs-on: ubuntu-latest
     steps:
       - name: Checkout del repositorio
@@ -39,6 +19,46 @@ jobs:
         run: npm run build
 
       - name: Desplegar en Vercel
+        id: vercel-deploy
         run: |
           npm install -g vercel
           vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
+        continue-on-error: true
+
+      - name: Verificar resultado del despliegue
+        id: deploy-status
+        shell: bash
+        run: |
+          if [[ $? -eq 0 ]]; then
+            echo "EXITO || Despliegue exitoso en Vercel"
+            echo "EXITO || Despliegue exitoso en Vercel" >> $GITHUB_ENV
+          else
+            echo "ERROR || El despliegue en Vercel falló"
+            echo "ERROR || El despliegue en Vercel falló" >> $GITHUB_ENV
+          fi
+
+  upload-result-s3:
+    needs: deploy-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v3
+
+      - name: Verificar variables de entorno
+        shell: bash
+        run: |
+          echo "AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          echo "AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}"
+
+      - name: Usar action personalizada para subir log a S3
+        uses: JosthinAyonC/upload-log-s3@v1.0
+        with:
+          log-text: |
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+            Mensaje: ${{ github.event.head_commit.message }}
+            Status deployment: ${{ env.EXITO || env.ERROR }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          bucket-name: ${{ secrets.AWS_BUCKET_NAME }}
