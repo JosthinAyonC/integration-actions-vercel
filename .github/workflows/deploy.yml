@@ -28,11 +28,12 @@ jobs:
       - name: Verificar resultado del despliegue
         id: deploy-status
         shell: bash
+        # https://docs.github.com/es/actions/writing-workflows/choosing-what-your-workflow-does/passing-information-between-jobs#ejemplo-definir-salidas-para-un-job
         run: |
           if [[ $? -eq 0 ]]; then
-            echo "DEPLOY_STATUS=EXITO || Despliegue exitoso en Vercel" >> $GITHUB_ENV
+            echo "DEPLOY_STATUS=EXITO || Despliegue exitoso en Vercel" >> "$GITHUB_OUTPUT"
           else
-            echo "DEPLOY_STATUS=ERROR || El despliegue en Vercel falló" >> $GITHUB_ENV
+            echo "DEPLOY_STATUS=ERROR || El despliegue en Vercel falló" >> "$GITHUB_OUTPUT"
           fi
 
   upload-result-s3:
@@ -56,7 +57,7 @@ jobs:
             Branch: ${{ github.ref }}
             Commit: ${{ github.sha }}
             Mensaje: ${{ github.event.head_commit.message }}
-            Status deployment: ${{ env.DEPLOY_STATUS }}
+            Status deployment: ${{ needs.deploy-frontend.outputs.output1 }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           bucket-name: ${{ secrets.AWS_BUCKET_NAME }}
