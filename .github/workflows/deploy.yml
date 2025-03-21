@@ -1,0 +1,39 @@
+name: Deploy & Log to S3
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  log-to-s3:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v3
+
+      - name: Usar action personalizada
+        uses: JosthinAyonC/upload-log-s3@v1.0
+        with:
+          log-text: "Nuevo push en main - Commit: ${{ github.sha }} - Mensaje: ${{ github.event.head_commit.message }}"
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          bucket-name: ${{ secrets.AWS_BUCKET_NAME }}
+
+  deploy-frontend:
+    needs: log-to-s3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v3
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Construir el proyecto
+        run: npm run build
+
+      - name: Desplegar en Vercel
+        run: |
+          npm install -g vercel
+          vercel --token ${{ secrets.VERCEL_TOKEN }} --prod
