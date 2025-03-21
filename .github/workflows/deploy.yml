@@ -30,10 +30,8 @@ jobs:
         shell: bash
         run: |
           if [[ $? -eq 0 ]]; then
-            echo "EXITO || Despliegue exitoso en Vercel"
             echo "EXITO || Despliegue exitoso en Vercel" >> $GITHUB_ENV
           else
-            echo "ERROR || El despliegue en Vercel falló"
             echo "ERROR || El despliegue en Vercel falló" >> $GITHUB_ENV
           fi
 
