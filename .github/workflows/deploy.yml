@@ -8,6 +8,8 @@ on:
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
+    outputs:
+      deploy-status: ${{ steps.deploy-status.outputs.deploy-status }}
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v3
@@ -31,9 +33,9 @@ jobs:
         # https://docs.github.com/es/actions/writing-workflows/choosing-what-your-workflow-does/passing-information-between-jobs#ejemplo-definir-salidas-para-un-job
         run: |
           if [[ $? -eq 0 ]]; then
-            echo "DEPLOY_STATUS=EXITO || Despliegue exitoso en Vercel" >> "$GITHUB_OUTPUT"
+            echo "deploy-status=EXITO || Despliegue exitoso en Vercel" >> "$GITHUB_OUTPUT"
           else
-            echo "DEPLOY_STATUS=ERROR || El despliegue en Vercel falló" >> "$GITHUB_OUTPUT"
+            echo "deploy-status=ERROR || El despliegue en Vercel falló" >> "$GITHUB_OUTPUT"
           fi
 
   upload-result-s3:
@@ -57,7 +59,7 @@ jobs:
             Branch: ${{ github.ref }}
             Commit: ${{ github.sha }}
             Mensaje: ${{ github.event.head_commit.message }}
-            Status deployment: ${{ needs.deploy-frontend.outputs.output1 }}
+            Status deployment: ${{ needs.deploy-frontend.outputs.deploy-status }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           bucket-name: ${{ secrets.AWS_BUCKET_NAME }}
